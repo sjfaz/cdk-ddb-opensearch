@@ -1,0 +1,19 @@
+{
+  "name": "services",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.102",
+    "@types/node": "^18.7.16",
+    "aws-lambda": "^1.0.7"
+  },
+  "dependencies": {
+    "@aws-crypto/sha256-browser": "^2.0.2",
+    "@aws-sdk/client-opensearch": "^3.171.0",
+    "@aws-sdk/credential-provider-node": "^3.171.0",
+    "@aws-sdk/node-http-handler": "^3.171.0",
+    "@aws-sdk/protocol-http": "^3.171.0",
+    "@aws-sdk/signature-v4": "^3.171.0"
+  }
+}
