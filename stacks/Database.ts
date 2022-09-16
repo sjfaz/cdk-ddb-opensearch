@@ -15,7 +15,7 @@ import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { DynamoEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 const { EngineVersion, Domain } = aws_opensearchservice;
-const INDEX_NAME = "transaction-index";
+const OS_INDEX_NAME = "transaction-index";
 
 export class Database extends Construct {
   public readonly table: dynamodb.Table;
@@ -35,14 +35,8 @@ export class Database extends Construct {
       stream: dynamodb.StreamViewType.NEW_IMAGE,
     });
 
-    // Add OpenSearch cluster
-    // const devDomain = new Domain(this, "OSDomain", {
-    //   version: EngineVersion.OPENSEARCH_1_0,
-    //   enableVersionUpgrade: true,
-    // });
-
     const openSearchDomain = new Domain(this, "OpenSearchDomain", {
-      version: EngineVersion.OPENSEARCH_1_0,
+      version: EngineVersion.OPENSEARCH_1_3,
       enableVersionUpgrade: true,
       accessPolicies: [
         aws_iam.PolicyStatement.fromJson({
@@ -59,7 +53,7 @@ export class Database extends Construct {
           ],
           Action: "es:ESHttpGet*",
           Resource: `arn:aws:es:${process.env.CDK_DEFAULT_REGION!}:${process.env
-            .CDK_DEFAULT_ACCOUNT!}:domain/${INDEX_NAME}/*`,
+            .CDK_DEFAULT_ACCOUNT!}:domain/${OS_INDEX_NAME}/*`,
           Condition: {
             IpAddress: {
               "aws:SourceIp": `${ipAddress.valueAsString}/24`,
@@ -91,9 +85,9 @@ export class Database extends Construct {
       memorySize: 512,
       timeout: Duration.seconds(30),
       environment: {
-        INDEX_NAME,
-        AWS_REGION: process.env.CDK_DEFAULT_REGION!,
-        DOMAIN: openSearchDomain.domainEndpoint,
+        OS_INDEX_NAME,
+        OS_AWS_REGION: process.env.CDK_DEFAULT_REGION!,
+        OS_DOMAIN: openSearchDomain.domainEndpoint,
       },
     });
 
@@ -107,7 +101,7 @@ export class Database extends Construct {
       })
     );
 
-    openSearchDomain.grantIndexReadWrite(INDEX_NAME, streamProcessor);
+    openSearchDomain.grantIndexReadWrite(OS_INDEX_NAME, streamProcessor);
 
     this.table = table;
     new CfnOutput(this, "TableName", { value: table.tableName });
