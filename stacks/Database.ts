@@ -28,6 +28,12 @@ export class Database extends Construct {
       stream: dynamodb.StreamViewType.NEW_IMAGE,
     });
 
+    // Escape hatch example
+    // const ddbCfnNode = table.node.defaultChild as dynamodb.CfnTable;
+    // ddbCfnNode.sseSpecification = {
+    //   sseEnabled: true,
+    // };
+
     const openSearchDomain = new Domain(this, "OpenSearchDomain", {
       version: EngineVersion.OPENSEARCH_1_3,
       enableVersionUpgrade: true,
