@@ -2,11 +2,9 @@ import {
   CfnOutput,
   Stack,
   Duration,
-  aws_ssm,
   aws_opensearchservice,
   aws_ec2,
   aws_iam,
-  CfnParameter,
 } from "aws-cdk-lib";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import { Construct } from "constructs";
@@ -19,13 +17,8 @@ const OS_INDEX_NAME = "transaction-index";
 
 export class Database extends Construct {
   public readonly table: dynamodb.Table;
-  constructor(parent: Stack, name: string, props: {}) {
+  constructor(parent: Stack, name: string, props: { ipAddress: string }) {
     super(parent, name);
-
-    const ipAddress = new CfnParameter(this, "ipAddress", {
-      type: "String",
-      description: "IP_Address to access OS dashboard from.",
-    });
 
     const table = new dynamodb.Table(this, "TransactionTable", {
       partitionKey: { name: "pk", type: dynamodb.AttributeType.STRING },
@@ -38,29 +31,6 @@ export class Database extends Construct {
     const openSearchDomain = new Domain(this, "OpenSearchDomain", {
       version: EngineVersion.OPENSEARCH_1_3,
       enableVersionUpgrade: true,
-      accessPolicies: [
-        aws_iam.PolicyStatement.fromJson({
-          Version: "2012-10-17",
-          Statement: [
-            {
-              Effect: "Allow",
-              Principal: {
-                AWS: "*",
-              },
-              Action: "es:*",
-              Resource: "*",
-            },
-          ],
-          Action: "es:ESHttpGet*",
-          Resource: `arn:aws:es:${process.env.CDK_DEFAULT_REGION!}:${process.env
-            .CDK_DEFAULT_ACCOUNT!}:domain/${OS_INDEX_NAME}/*`,
-          Condition: {
-            IpAddress: {
-              "aws:SourceIp": `${ipAddress.valueAsString}/24`,
-            },
-          },
-        }),
-      ],
       capacity: {
         dataNodeInstanceType: "t3.small.search",
         dataNodes: 1,
@@ -77,6 +47,23 @@ export class Database extends Construct {
         slowIndexLogEnabled: true,
       },
     });
+
+    openSearchDomain.addAccessPolicies(
+      aws_iam.PolicyStatement.fromJson({
+        Effect: "Allow",
+        Principal: {
+          AWS: "*",
+        },
+        Action: "es:ESHttp*",
+        Resource: `arn:aws:es:${process.env.CDK_DEFAULT_REGION!}:${process.env
+          .CDK_DEFAULT_ACCOUNT!}:domain/${openSearchDomain.domainName}/*`,
+        Condition: {
+          IpAddress: {
+            "aws:SourceIp": `${props.ipAddress}/24`,
+          },
+        },
+      })
+    );
 
     const streamProcessor = new NodejsFunction(this, "ProcessStreamData", {
       ...lambdaFnProps,
@@ -96,7 +83,7 @@ export class Database extends Construct {
       new DynamoEventSource(table, {
         // startingPosition: lambda.StartingPosition.LATEST,
         startingPosition: lambda.StartingPosition.TRIM_HORIZON,
-        batchSize: 1,
+        batchSize: 1, // default is 100
         retryAttempts: 3,
       })
     );

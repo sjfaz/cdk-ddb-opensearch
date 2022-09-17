@@ -1,6 +1,6 @@
 import { DynamoDBStreamEvent } from "aws-lambda";
 import DynamoDB from "aws-sdk/clients/dynamodb";
-import { Transaction, deleteDocument, indexDocument } from "./client";
+import { Transaction, deleteDocument, indexDocument } from "../core/client";
 
 export async function indexDocumentInOpenSearch(
   user: Transaction,
