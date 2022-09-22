@@ -7,6 +7,8 @@ import {
   aws_iam,
 } from "aws-cdk-lib";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as events from "aws-cdk-lib/aws-events";
+import { LambdaFunction } from "aws-cdk-lib/aws-events-targets";
 import { Construct } from "constructs";
 import { lambdaFnProps } from "./utils";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
@@ -62,8 +64,6 @@ export class Database extends Construct {
           AWS: "*",
         },
         Action: "es:ESHttp*",
-        // Resource: `arn:aws:es:${process.env.CDK_DEFAULT_REGION!}:${process.env
-        //   .CDK_DEFAULT_ACCOUNT!}:domain/${openSearchDomain.domainName}/*`,
         Resource: `${openSearchDomain.domainArn}/*`,
         Condition: {
           IpAddress: {
@@ -75,8 +75,10 @@ export class Database extends Construct {
 
     const streamProcessor = new NodejsFunction(this, "ProcessStreamData", {
       ...lambdaFnProps,
-      entry: "./services/functions/stream-processor.ts", // accepts .js, .jsx, .ts and .tsx files
+      entry: "./services/functions/stream-processor.ts",
       handler: "handler",
+      memorySize: 1024,
+      timeout: Duration.seconds(300),
       environment: {
         OS_INDEX_NAME,
         OS_AWS_REGION: process.env.CDK_DEFAULT_REGION!,
@@ -87,7 +89,7 @@ export class Database extends Construct {
 
     const ddbLambda = new NodejsFunction(this, "DynamoDBCrud", {
       ...lambdaFnProps,
-      entry: "./services/functions/crud/ddb-crud.ts", // accepts .js, .jsx, .ts and .tsx files
+      entry: "./services/functions/crud/ddb-crud.ts",
       handler: "handler",
       functionName: "invoke-dynamodb",
       environment: {
@@ -99,7 +101,7 @@ export class Database extends Construct {
 
     const ddbIngestion = new NodejsFunction(this, "DynamoDBIngestion", {
       ...lambdaFnProps,
-      entry: "./services/functions/ingest-data.ts", // accepts .js, .jsx, .ts and .tsx files
+      entry: "./services/functions/ingest-data.ts",
       handler: "handler",
       functionName: "ingest-dynamodb",
       memorySize: 1024,
@@ -114,7 +116,7 @@ export class Database extends Construct {
 
     const ddbOpenSearch = new NodejsFunction(this, "OpenSearchCrud", {
       ...lambdaFnProps,
-      entry: "./services/functions/crud/os-crud.ts", // accepts .js, .jsx, .ts and .tsx files
+      entry: "./services/functions/crud/os-crud.ts",
       handler: "handler",
       functionName: "invoke-opensearch",
       environment: {
@@ -131,10 +133,15 @@ export class Database extends Construct {
       new DynamoEventSource(table, {
         // startingPosition: lambda.StartingPosition.LATEST,
         startingPosition: lambda.StartingPosition.TRIM_HORIZON,
-        batchSize: 1, // default is 100
+        batchSize: 100, // default is 100
         retryAttempts: 0,
       })
     );
+
+    new events.Rule(this, "ScheduleRule", {
+      schedule: events.Schedule.cron({ minute: "0/5" }), // every 5 minutes
+      targets: [new LambdaFunction(ddbIngestion)],
+    });
 
     openSearchDomain.grantIndexReadWrite(OS_INDEX_NAME, streamProcessor);
 
