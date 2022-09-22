@@ -14,6 +14,9 @@
     "@aws-sdk/credential-provider-node": "^3.171.0",
     "@aws-sdk/node-http-handler": "^3.171.0",
     "@aws-sdk/protocol-http": "^3.171.0",
-    "@aws-sdk/signature-v4": "^3.171.0"
+    "@aws-sdk/signature-v4": "^3.171.0",
+    "@ngneat/falso": "^6.1.0",
+    "@opensearch-project/opensearch": "^2.0.0",
+    "aws-opensearch-connector": "^1.1.0"
   }
 }

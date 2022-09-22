@@ -1,37 +1,10 @@
 import { DynamoDBStreamEvent } from "aws-lambda";
 import DynamoDB from "aws-sdk/clients/dynamodb";
-import { Transaction, deleteDocument, indexDocument } from "../core/client";
+import { getClient } from "../core/clients/os-client";
+import { Transaction } from "../core/data";
 
-export async function indexDocumentInOpenSearch(
-  user: Transaction,
-  partitionKey: string | undefined,
-  sortKey: string | undefined
-): Promise<void> {
-  if (!partitionKey || !sortKey) {
-    console.error("Error: either partition key or sort key is undefined");
-    return;
-  }
-
-  const documentId = `${partitionKey}_${sortKey}`;
-  console.log("Indexing document in OpenSearch with id:", documentId);
-
-  await indexDocument(documentId, user);
-}
-
-export async function removeDocumentFromOpenSearch(
-  partitionKey: string | undefined,
-  sortKey: string | undefined
-): Promise<void> {
-  if (!partitionKey || !sortKey) {
-    console.error("Error: either partition key or sort key is undefined");
-    return;
-  }
-
-  const documentId = `${partitionKey}_${sortKey}`;
-  console.log("Deleting document from OpenSearch with id:", documentId);
-
-  await deleteDocument(documentId);
-}
+const client = getClient();
+const index = process.env.OS_INDEX_NAME!;
 
 export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
   console.log("Received event from some table");
@@ -40,17 +13,15 @@ export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
     if (!record.eventName || !record.dynamodb || !record.dynamodb.Keys)
       continue;
 
-    const partitionKey = record.dynamodb.Keys.pk.S;
-    const sortKey = record.dynamodb.Keys.sk.S;
-    // Note here that we are using a pk and sk but maybe you are using only an id, this would look like:
-    // const id = record.dynamodb.Keys.id.S;
+    const documentId = `${record.dynamodb.Keys.pk.S}_${record.dynamodb.Keys.sk.S}`;
 
     try {
       if (record.eventName === "REMOVE") {
         console.log(
           "Received remove event from some table, deleting the document from OpenSearch"
         );
-        return await removeDocumentFromOpenSearch(partitionKey, sortKey);
+        console.log("Deleting document from OpenSearch with id:", documentId);
+        await client.delete({ index, id: documentId });
       } else {
         if (!record.dynamodb.NewImage) continue;
 
@@ -60,7 +31,12 @@ export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
         const document = DynamoDB.Converter.unmarshall(
           record.dynamodb.NewImage
         ) as Transaction;
-        return await indexDocumentInOpenSearch(document, partitionKey, sortKey);
+        console.log("Indexing document in OpenSearch with id:", documentId);
+        await client.index({
+          index,
+          id: documentId,
+          body: document,
+        });
       }
     } catch (error) {
       console.error("Error occurred updating OpenSearch domain", error);

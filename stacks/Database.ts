@@ -54,6 +54,7 @@ export class Database extends Construct {
       },
     });
 
+    // If you want to see dashboard, you need to add this policy
     openSearchDomain.addAccessPolicies(
       aws_iam.PolicyStatement.fromJson({
         Effect: "Allow",
@@ -61,8 +62,9 @@ export class Database extends Construct {
           AWS: "*",
         },
         Action: "es:ESHttp*",
-        Resource: `arn:aws:es:${process.env.CDK_DEFAULT_REGION!}:${process.env
-          .CDK_DEFAULT_ACCOUNT!}:domain/${openSearchDomain.domainName}/*`,
+        // Resource: `arn:aws:es:${process.env.CDK_DEFAULT_REGION!}:${process.env
+        //   .CDK_DEFAULT_ACCOUNT!}:domain/${openSearchDomain.domainName}/*`,
+        Resource: `${openSearchDomain.domainArn}/*`,
         Condition: {
           IpAddress: {
             "aws:SourceIp": `${props.ipAddress}/24`,
@@ -75,14 +77,54 @@ export class Database extends Construct {
       ...lambdaFnProps,
       entry: "./services/functions/stream-processor.ts", // accepts .js, .jsx, .ts and .tsx files
       handler: "handler",
-      memorySize: 512,
-      timeout: Duration.seconds(30),
       environment: {
         OS_INDEX_NAME,
         OS_AWS_REGION: process.env.CDK_DEFAULT_REGION!,
-        OS_DOMAIN: openSearchDomain.domainEndpoint,
+        OS_DOMAIN: `https://${openSearchDomain.domainEndpoint}`,
+      },
+      retryAttempts: 0,
+    });
+
+    const ddbLambda = new NodejsFunction(this, "DynamoDBCrud", {
+      ...lambdaFnProps,
+      entry: "./services/functions/crud/ddb-crud.ts", // accepts .js, .jsx, .ts and .tsx files
+      handler: "handler",
+      functionName: "invoke-dynamodb",
+      environment: {
+        DDB_TABLE_NAME: table.tableName,
       },
     });
+
+    table.grantFullAccess(ddbLambda);
+
+    const ddbIngestion = new NodejsFunction(this, "DynamoDBIngestion", {
+      ...lambdaFnProps,
+      entry: "./services/functions/ingest-data.ts", // accepts .js, .jsx, .ts and .tsx files
+      handler: "handler",
+      functionName: "ingest-dynamodb",
+      memorySize: 1024,
+      timeout: Duration.seconds(300),
+      environment: {
+        DDB_TABLE_NAME: table.tableName,
+      },
+      retryAttempts: 0,
+    });
+
+    table.grantFullAccess(ddbIngestion);
+
+    const ddbOpenSearch = new NodejsFunction(this, "OpenSearchCrud", {
+      ...lambdaFnProps,
+      entry: "./services/functions/crud/os-crud.ts", // accepts .js, .jsx, .ts and .tsx files
+      handler: "handler",
+      functionName: "invoke-opensearch",
+      environment: {
+        OS_INDEX_NAME,
+        OS_AWS_REGION: process.env.CDK_DEFAULT_REGION!,
+        OS_DOMAIN: `https://${openSearchDomain.domainEndpoint}`,
+      },
+    });
+
+    openSearchDomain.grantReadWrite(ddbOpenSearch);
 
     // Add DynamoDB event source
     streamProcessor.addEventSource(
@@ -90,7 +132,7 @@ export class Database extends Construct {
         // startingPosition: lambda.StartingPosition.LATEST,
         startingPosition: lambda.StartingPosition.TRIM_HORIZON,
         batchSize: 1, // default is 100
-        retryAttempts: 3,
+        retryAttempts: 0,
       })
     );
 

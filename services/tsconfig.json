@@ -1,6 +1,6 @@
 {
   "extends": "../tsconfig.json",
-  "include": ["functions", "core/client.ts"],
+  "include": ["functions", "core/os-client.ts"],
   "compilerOptions": {
     "outDir": "./dist",
     "module": "commonjs",
