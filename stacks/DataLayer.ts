@@ -17,7 +17,7 @@ import { DynamoEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 const { EngineVersion, Domain } = aws_opensearchservice;
 const OS_INDEX_NAME = "transaction-index";
 
-export class Database extends Construct {
+export class DataLayer extends Construct {
   public readonly table: dynamodb.Table;
   constructor(parent: Stack, name: string, props: { ipAddress: string }) {
     super(parent, name);
