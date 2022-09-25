@@ -6,7 +6,7 @@ export const getClient = (): DocumentClient => {
   client = new DocumentClient({
     httpOptions: {
       connectTimeout: 1000,
-      timeout: 1000,
+      timeout: 5000,
     },
   });
   return client;
