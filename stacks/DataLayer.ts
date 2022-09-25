@@ -18,7 +18,9 @@ const { EngineVersion, Domain } = aws_opensearchservice;
 const OS_INDEX_NAME = "transaction-index";
 
 export class DataLayer extends Construct {
-  public readonly table: dynamodb.Table;
+  public readonly table: dynamodb.ITable;
+  public readonly osDomain: aws_opensearchservice.IDomain;
+
   constructor(parent: Stack, name: string, props: { ipAddress: string }) {
     super(parent, name);
 
@@ -103,7 +105,7 @@ export class DataLayer extends Construct {
       ...lambdaFnProps,
       entry: "./services/functions/ingest-data.ts",
       handler: "handler",
-      functionName: "ingest-dynamodb",
+      functionName: `${name}-ingest-dynamodb`,
       memorySize: 1024,
       timeout: Duration.seconds(300),
       environment: {
@@ -118,7 +120,7 @@ export class DataLayer extends Construct {
       ...lambdaFnProps,
       entry: "./services/functions/crud/os-crud.ts",
       handler: "handler",
-      functionName: "invoke-opensearch",
+      functionName: `${name}-invoke-opensearch`,
       environment: {
         OS_INDEX_NAME,
         OS_AWS_REGION: process.env.CDK_DEFAULT_REGION!,
@@ -139,13 +141,14 @@ export class DataLayer extends Construct {
     );
 
     new events.Rule(this, "ScheduleRule", {
-      schedule: events.Schedule.cron({ minute: "0/5" }), // every 5 minutes
+      schedule: events.Schedule.cron({ minute: "0/3" }), // every 3 minutes
       targets: [new LambdaFunction(ddbIngestion)],
     });
 
     openSearchDomain.grantIndexReadWrite(OS_INDEX_NAME, streamProcessor);
 
     this.table = table;
+    this.osDomain = openSearchDomain;
     new CfnOutput(this, "TableName", { value: table.tableName });
   }
 }

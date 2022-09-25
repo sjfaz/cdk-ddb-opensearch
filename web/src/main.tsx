@@ -47,7 +47,7 @@ function Main(props: MainProps) {
           location={location}
           routes={[
             { path: "/", element: <Home /> },
-            { path: "ddb", element: <Home /> },
+            // { path: "ddb", element: <Home /> },
           ]}
         ></Router>
       </QueryClientProvider>

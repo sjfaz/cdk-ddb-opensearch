@@ -3,15 +3,23 @@ import {
   HttpApi,
   HttpMethod,
 } from "@aws-cdk/aws-apigatewayv2-alpha";
-import { StackProps, Stack, Duration, CfnOutput, aws_ssm } from "aws-cdk-lib";
+import {
+  StackProps,
+  Stack,
+  Duration,
+  CfnOutput,
+  aws_opensearchservice,
+} from "aws-cdk-lib";
 import { HttpLambdaIntegration } from "@aws-cdk/aws-apigatewayv2-integrations-alpha";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import { Construct } from "constructs";
 import { lambdaFnProps } from "./utils";
 import { ITable } from "aws-cdk-lib/aws-dynamodb";
+const OS_INDEX_NAME = "transaction-index";
 
 interface LambdaApiStackProps extends StackProps {
   table: ITable;
+  domain: aws_opensearchservice.IDomain;
 }
 
 export class APILayerConstruct extends Construct {
@@ -46,16 +54,11 @@ export class APILayerConstruct extends Construct {
       {
         ...lambdaFnProps,
         entry: "./services/functions/simple.ts", // accepts .js, .jsx, .ts and .tsx files
-        functionName: "simple",
+        functionName: `${name}-simple`,
         handler: "handler",
         memorySize: 512,
         timeout: Duration.seconds(30),
-        environment: {
-          SLACK_URL: aws_ssm.StringParameter.valueForStringParameter(
-            this,
-            "/awesome-agency/slack-url"
-          ),
-        },
+        environment: {},
       }
     );
 
@@ -65,15 +68,21 @@ export class APILayerConstruct extends Construct {
       {
         ...lambdaFnProps,
         entry: "./services/functions/tRPC.ts", // accepts .js, .jsx, .ts and .tsx files
-        functionName: "tRPC",
+        functionName: `${name}-tRPC`,
         handler: "handler",
         memorySize: 512,
-        environment: { TABLE_NAME: props.table.tableName },
+        environment: {
+          TABLE_NAME: props.table.tableName,
+          OS_INDEX_NAME,
+          OS_AWS_REGION: process.env.CDK_DEFAULT_REGION!,
+          OS_DOMAIN: `https://${props.domain.domainEndpoint}`,
+        },
         timeout: Duration.seconds(30),
       }
     );
 
     props.table.grantFullAccess(newFuncRPC);
+    props.domain.grantReadWrite(newFuncRPC);
 
     // Add route for GET /todos
     httpApi.addRoutes({
@@ -100,7 +109,7 @@ export class APILayerConstruct extends Construct {
       path: "/beta/{proxy+}",
       methods: [HttpMethod.POST],
       integration: new HttpLambdaIntegration(
-        "beta-integration3",
+        `${name}-bete-integration-post`,
         newFuncRPC,
         {}
       ),

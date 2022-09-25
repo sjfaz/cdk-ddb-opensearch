@@ -1,5 +1,5 @@
 import { Transaction } from "../core/data";
-import { randAccount } from "@ngneat/falso";
+import { randAccount, randProductDescription } from "@ngneat/falso";
 import { getClient } from "../core/clients/ddb-client";
 
 async function batchWrite(txns: Transaction[]) {
@@ -47,13 +47,17 @@ export const handler = async (): Promise<void> => {
   const txnArray: Transaction[] = [];
   while (counter < 1000) {
     counter++;
-    const customer_id = `${randAccount({ accountLength: 3 })}`;
+    const customer_id = `0${randAccount({ accountLength: 3 })}`;
     const txn_id = randAccount();
     const txn = {
       pk: `CUST#${customer_id}`,
       sk: `TXN#${txn_id}`,
       customer_id,
       txn_id,
+      card_number: randAccount({ accountLength: 16 }),
+      product_code: randAccount({ accountLength: 3 }),
+      txn_datetime: new Date().toISOString(),
+      description: randProductDescription(),
     };
     txnArray.push(txn);
     if (txnArray.length === 25) {
