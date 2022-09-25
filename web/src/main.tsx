@@ -1,16 +1,10 @@
 import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import Home from "./pages/Home";
+import Analysis from "./pages/Analysis";
 import { QueryClient, QueryClientProvider } from "react-query";
 import { trpc } from "../utils/trpc";
-import {
-  Link,
-  MakeGenerics,
-  Outlet,
-  ReactLocation,
-  Router,
-  useMatch,
-} from "@tanstack/react-location";
+import { ReactLocation, Router, useMatch } from "@tanstack/react-location";
 import "@cloudscape-design/global-styles/index.css";
 
 let url = "";
@@ -47,7 +41,7 @@ function Main(props: MainProps) {
           location={location}
           routes={[
             { path: "/", element: <Home /> },
-            // { path: "ddb", element: <Home /> },
+            { path: "/analysis", element: <Analysis /> },
           ]}
         ></Router>
       </QueryClientProvider>

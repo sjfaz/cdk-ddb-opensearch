@@ -40,22 +40,6 @@ export const OSTable = () => {
     ) ?? [];
   const totalRecords = getOrders.data?.totalHits ?? 0;
 
-  const deleteClicked = async () => {
-    if (selectedItems.length !== 1) {
-      alert("Please select just one item to delete");
-      return;
-    }
-    await deleteTransaction.mutateAsync({
-      pk: selectedItems[0].pk,
-      sk: selectedItems[0].sk,
-    });
-    setSelectedItems([]);
-    // We need to wait until change is replicated across to OS from DDB.
-    setTimeout(() => {
-      getOrders.refetch();
-    }, 2000);
-  };
-
   return (
     <div>
       <Table
@@ -126,18 +110,20 @@ export const OSTable = () => {
           <TextFilter
             filteringPlaceholder="Filter by transaction ID"
             filteringText={filteredText}
-            onChange={(e) =>
-              // setSelectedItems([])
+            onChange={(e) => {
+              setSelectedItems([]);
               setAppOptions((pv) => ({
                 ...pv,
+                page: 1,
                 filteredText: e.detail.filteringText,
-              }))
-            }
+              }));
+            }}
           />
         }
         header={
           <Header
             counter={filteredData.length > 0 ? `(${filteredData[0].pk})` : ""}
+            // actions={<Button onClick={deleteClicked}>Delete</Button>}
           >
             Transactions Table
           </Header>
@@ -213,10 +199,23 @@ export const OSTable = () => {
           : totalRecords
           ? `${totalRecords} records from the server`
           : ""}
-        {/* <div style={{ textAlign: "right" }}>
-          <Button onClick={deleteClicked}>Delete</Button>
-        </div> */}
       </Box>
     </div>
   );
 };
+
+// const deleteClicked = async () => {
+//   if (selectedItems.length !== 1) {
+//     alert("Please select just one item to delete");
+//     return;
+//   }
+//   await deleteTransaction.mutateAsync({
+//     pk: selectedItems[0].pk,
+//     sk: selectedItems[0].sk,
+//   });
+//   setSelectedItems([]);
+//   // We need to wait until change is replicated across to OS from DDB.
+//   setTimeout(() => {
+//     getOrders.refetch();
+//   }, 2000);
+// };

@@ -5,9 +5,19 @@ import {
 } from "@cloudscape-design/components";
 
 const SideHeader = { text: "Demo", href: "/" };
-export const Navigation = () => {
+
+interface NavigationProps extends SideNavigationProps {
+  activeHref: string;
+}
+
+export const Navigation = (props: NavigationProps) => {
   const navItems: SideNavigationProps.Item[] = [
-    { type: "link", text: "OpenSearch + DDB Demo", href: "/" },
+    {
+      type: "link",
+      text: "OpenSearch Demo",
+      href: "/",
+      // info: <div>Test</div>
+    },
     { type: "link", text: "Analysis", href: "/analysis" },
   ];
   return (
@@ -15,7 +25,7 @@ export const Navigation = () => {
       <SideNavigation
         items={navItems}
         header={SideHeader}
-        activeHref="/"
+        activeHref={props.activeHref}
         onFollow={(e) => console.log(e)}
       />
     </>
