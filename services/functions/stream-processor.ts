@@ -23,7 +23,9 @@ export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
         console.log("Deleting document from OpenSearch with id:", documentId);
         await client.delete({ index, id: documentId });
       } else {
-        if (!record.dynamodb.NewImage) continue;
+        if (!record.dynamodb.NewImage) {
+          continue;
+        }
 
         console.log(
           `Received ${record.eventName.toLowerCase()} event from dynamo, indexing the document in OpenSearch`

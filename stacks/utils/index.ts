@@ -13,7 +13,7 @@ export const lambdaFnProps: Partial<NodejsFunctionProps> = {
   },
   runtime: lambda.Runtime.NODEJS_16_X,
   timeout: Duration.seconds(30),
-  memorySize: 512,
+  memorySize: 2048,
   logRetention: RetentionDays.ONE_DAY,
   environment: {
     NODE_OPTIONS: "--enable-source-maps",

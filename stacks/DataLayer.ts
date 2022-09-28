@@ -5,6 +5,7 @@ import {
   aws_opensearchservice,
   aws_ec2,
   aws_iam,
+  RemovalPolicy,
 } from "aws-cdk-lib";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as events from "aws-cdk-lib/aws-events";
@@ -28,27 +29,31 @@ export class DataLayer extends Construct {
       partitionKey: { name: "pk", type: dynamodb.AttributeType.STRING },
       sortKey: { name: "sk", type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      pointInTimeRecovery: true,
+      removalPolicy: RemovalPolicy.DESTROY,
       stream: dynamodb.StreamViewType.NEW_IMAGE,
     });
 
-    // Escape hatch example
-    // const ddbCfnNode = table.node.defaultChild as dynamodb.CfnTable;
-    // ddbCfnNode.sseSpecification = {
-    //   sseEnabled: true,
-    // };
-
+    // Optimal size is 30GB per shard in index
+    // For 1TB we need 34 shards. Default is number of shards is 5.
+    // 1GB of JVM Heap RAM should for 20/25 shards
+    // So we need at least 4GB of RAM (only 50% of instance RAM goes to JVM)
+    // For redundancy we need 2 instances - the replica of the index will be stored on the second instance.
+    // TODO: We can use more indexes to split up the data. But we don't want an index-per-tenant that would be too many shards.
     const openSearchDomain = new Domain(this, "OpenSearchDomain", {
       version: EngineVersion.OPENSEARCH_1_3,
       enableVersionUpgrade: true,
       capacity: {
-        dataNodeInstanceType: "t3.small.search",
+        // dataNodeInstanceType: "t3.small.search",
+        dataNodeInstanceType: "m6g.xlarge.search", // 8GB (upto 1024 GB storage)
         dataNodes: 1,
         masterNodes: 0,
       },
+      // zoneAwareness: {
+      //   availabilityZoneCount: 2,
+      // },
       ebs: {
         enabled: true,
-        volumeSize: 50,
+        volumeSize: 1024,
         volumeType: aws_ec2.EbsDeviceVolumeType.GENERAL_PURPOSE_SSD,
       },
       logging: {
@@ -79,7 +84,6 @@ export class DataLayer extends Construct {
       ...lambdaFnProps,
       entry: "./services/functions/stream-processor.ts",
       handler: "handler",
-      memorySize: 1024,
       timeout: Duration.seconds(300),
       environment: {
         OS_INDEX_NAME,
@@ -110,11 +114,16 @@ export class DataLayer extends Construct {
       timeout: Duration.seconds(300),
       environment: {
         DDB_TABLE_NAME: table.tableName,
+        OS_INDEX_NAME,
+        OS_AWS_REGION: process.env.CDK_DEFAULT_REGION!,
+        OS_DOMAIN: `https://${openSearchDomain.domainEndpoint}`,
       },
       retryAttempts: 0,
     });
 
     table.grantFullAccess(ddbIngestion);
+    openSearchDomain.grantWrite(ddbIngestion);
+    openSearchDomain.grantIndexReadWrite(OS_INDEX_NAME, ddbIngestion);
 
     const ddbOpenSearch = new NodejsFunction(this, "OpenSearchCrud", {
       ...lambdaFnProps,
@@ -140,8 +149,11 @@ export class DataLayer extends Construct {
       })
     );
 
+    const every_3_mins = events.Schedule.rate(Duration.minutes(3));
+    // const every_3_hours = events.Schedule.rate(Duration.hours(3));
+    // events.Schedule.cron({ minute: "0", hour: "0/3" }), // every 3 hours
     new events.Rule(this, "ScheduleRule", {
-      schedule: events.Schedule.cron({ minute: "0/3" }), // every 3 minutes
+      schedule: every_3_mins,
       targets: [new LambdaFunction(ddbIngestion)],
     });
 

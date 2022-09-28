@@ -10,3 +10,4 @@ cdk.context.json
 .DS_Store
 */**/.DS_Store
 response.json
+os-workings.txt

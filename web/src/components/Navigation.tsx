@@ -12,12 +12,16 @@ interface NavigationProps extends SideNavigationProps {
 
 export const Navigation = (props: NavigationProps) => {
   const navItems: SideNavigationProps.Item[] = [
+    // { type: "link", text: "Scenario", href: "/scenario" },
+    // { type: "link", text: "OpenSearch Approach", href: "/os-approach" },
     {
       type: "link",
       text: "OpenSearch Demo",
       href: "/",
       // info: <div>Test</div>
     },
+    // { type: "link", text: "DynamoDB Approach", href: "/ddb-approach" },
+    // { type: "link", text: "DynamoDB Demo", href: "/ddb-demo" },
     { type: "link", text: "Analysis", href: "/analysis" },
   ];
   return (

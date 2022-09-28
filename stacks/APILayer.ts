@@ -57,7 +57,7 @@ export class APILayerConstruct extends Construct {
         functionName: `${name}-simple`,
         handler: "handler",
         memorySize: 512,
-        timeout: Duration.seconds(30),
+        timeout: Duration.seconds(15),
         environment: {},
       }
     );
@@ -70,14 +70,12 @@ export class APILayerConstruct extends Construct {
         entry: "./services/functions/tRPC.ts", // accepts .js, .jsx, .ts and .tsx files
         functionName: `${name}-tRPC`,
         handler: "handler",
-        memorySize: 512,
         environment: {
           TABLE_NAME: props.table.tableName,
           OS_INDEX_NAME,
           OS_AWS_REGION: process.env.CDK_DEFAULT_REGION!,
           OS_DOMAIN: `https://${props.domain.domainEndpoint}`,
         },
-        timeout: Duration.seconds(30),
       }
     );
 

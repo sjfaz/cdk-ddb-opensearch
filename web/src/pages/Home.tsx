@@ -42,9 +42,11 @@ export default function Home() {
     <AppLayout
       navigation={<Navigation activeHref="/" />}
       tools={sidePanel}
+      footerSelector="#footer"
       content={
         <ContentLayout header={<MainHeader />}>
           <OSTable />
+          {/* <Box id="footer">My footer</Box> */}
         </ContentLayout>
       }
     />

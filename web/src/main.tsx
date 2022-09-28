@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
-import Home from "./pages/Home";
-import Analysis from "./pages/Analysis";
+import Home from "./pages/home";
+import Analysis from "./pages/analysis";
 import { QueryClient, QueryClientProvider } from "react-query";
 import { trpc } from "../utils/trpc";
 import { ReactLocation, Router, useMatch } from "@tanstack/react-location";
 import "@cloudscape-design/global-styles/index.css";
+import "./style/index.css";
 
 let url = "";
 const getUrl = async () => {

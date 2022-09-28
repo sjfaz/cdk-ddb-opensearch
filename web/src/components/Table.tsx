@@ -1,28 +1,35 @@
 import React from "react";
 import { trpc } from "../../utils/trpc";
 import {
-  Button,
+  // Button,
   Header,
   Table,
   Box,
   Pagination,
   CollectionPreferences,
   TextFilter,
+  Spinner,
 } from "@cloudscape-design/components";
 import { Transaction } from "../../../services/core/data";
 
 const CUSTOMER_ID = "0123"; // TODO: Enable user to set
 const DEFAULT_PAGESIZE = 10;
-const DEFAULT_COLUMNS = {
-  customer_id: false,
-  txn_id: true,
-  card_number: true,
-  product_code: true,
-  description: true,
+type colState = { visible: boolean; limitLength?: number };
+const DEFAULT_COLUMNS: { [key: string]: colState } = {
+  customer_id: { visible: false },
+  txn_id: { visible: true },
+  card_number: { visible: true },
+  full_card_number: { visible: true },
+  product_code: { visible: true },
+  product_name: { visible: true },
+  product_quantity: { visible: true },
+  txn_datetime: { visible: true },
+  site_name: { visible: true },
+  original_gross_value: { visible: true },
+  description: { visible: true, limitLength: 50 },
 };
 
 export const OSTable = () => {
-  const [selectedItems, setSelectedItems] = React.useState<Transaction[]>([]);
   const [appOptions, setAppOptions] = React.useState({
     filteredText: "",
     page: 1,
@@ -30,9 +37,14 @@ export const OSTable = () => {
     columns: { ...DEFAULT_COLUMNS },
   });
   const { filteredText, page, pageSize, columns } = appOptions;
-  const params = { customer_id: CUSTOMER_ID, txn_id: filteredText };
+  const params = {
+    customer_id: CUSTOMER_ID,
+    search_fields: [
+      { key: "txn_id", value: filteredText },
+      { key: "customer_id", value: "0123" },
+    ],
+  };
   const getOrders = trpc.useQuery(["getTransactions", params]);
-  const deleteTransaction = trpc.useMutation(["deleteTransaction"]);
   console.log(getOrders);
   const filteredData =
     getOrders.data?.hits.filter((item) =>
@@ -43,66 +55,38 @@ export const OSTable = () => {
   return (
     <div>
       <Table
-        onSelectionChange={({ detail }) =>
-          setSelectedItems(detail.selectedItems)
-        }
-        selectedItems={selectedItems}
-        ariaLabels={{
-          selectionGroupLabel: "Items selection",
-          allItemsSelectionLabel: ({ selectedItems }) =>
-            `${selectedItems.length} ${
-              selectedItems.length === 1 ? "item" : "items"
-            } selected`,
-          itemSelectionLabel: ({ selectedItems }, item) => {
-            const isItemSelected = selectedItems.filter(
-              (i) => i.txn_id === item.txn_id
-            ).length;
-            return `${item.txn_id} is ${isItemSelected ? "" : "not"} selected`;
+        columnDefinitions={Object.keys(DEFAULT_COLUMNS).map((key) => ({
+          id: key,
+          header: key,
+          cell: (e: any) => {
+            const { limitLength } = DEFAULT_COLUMNS[key];
+            if (limitLength) {
+              return `${e[key].substring(0, limitLength)}...`;
+            }
+            return e[key];
           },
-        }}
-        columnDefinitions={[
-          {
-            id: "customer_id",
-            header: "Customer ID",
-            cell: (e) => e.customer_id,
-            // sortingField: "customer_id",
-          },
-          {
-            id: "txn_id",
-            header: "Transaction ID",
-            cell: (e) => e.txn_id,
-            // sortingField: "txn_id",
-          },
-          {
-            id: "card_number",
-            header: "Card Number",
-            cell: (e) => e.card_number,
-          },
-          {
-            id: "product_code",
-            header: "Product Code",
-            cell: (e) => <div>{e.product_code}</div>,
-          },
-          {
-            id: "description",
-            header: "Description",
-            cell: (e) => `${e.description.substring(0, 50)}...`,
-          },
-        ]}
+          sortingField: key,
+        }))}
         items={filteredData.slice((page - 1) * pageSize, page * pageSize)}
         loadingText="Loading resources"
-        selectionType="multi"
         trackBy="txn_id"
         visibleColumns={
           Object.entries(columns)
-            .map((e) => (e[1] ? e[0] : null))
+            .map((e) => (e[1].visible ? e[0] : null))
             .filter((e) => e !== null) as string[]
         }
         empty={
           <Box textAlign="center" color="inherit">
             <b>No resources</b>
             <Box padding={{ bottom: "s" }} variant="p" color="inherit">
-              {getOrders.isLoading ? "Loading..." : "No resources to display"}
+              {getOrders.isLoading ? (
+                <>
+                  <Spinner />
+                  Loading...
+                </>
+              ) : (
+                "No resources to display"
+              )}
             </Box>
           </Box>
         }
@@ -111,7 +95,6 @@ export const OSTable = () => {
             filteringPlaceholder="Filter by transaction ID"
             filteringText={filteredText}
             onChange={(e) => {
-              setSelectedItems([]);
               setAppOptions((pv) => ({
                 ...pv,
                 page: 1,
@@ -123,7 +106,6 @@ export const OSTable = () => {
         header={
           <Header
             counter={filteredData.length > 0 ? `(${filteredData[0].pk})` : ""}
-            // actions={<Button onClick={deleteClicked}>Delete</Button>}
           >
             Transactions Table
           </Header>
@@ -153,8 +135,10 @@ export const OSTable = () => {
                 ...pv,
                 pageSize: e.detail.pageSize ?? DEFAULT_PAGESIZE,
                 columns: Object.keys(DEFAULT_COLUMNS).reduce((acc, curr) => {
-                  acc[curr as keyof typeof DEFAULT_COLUMNS] =
-                    e.detail.visibleContent?.includes(curr) ?? false;
+                  acc[curr] = {
+                    ...DEFAULT_COLUMNS[curr],
+                    visible: e.detail.visibleContent?.includes(curr) ?? false,
+                  };
                   return acc;
                 }, {} as typeof DEFAULT_COLUMNS),
               }));
@@ -165,7 +149,7 @@ export const OSTable = () => {
             preferences={{
               pageSize: pageSize,
               visibleContent: Object.entries(columns)
-                .map((e) => (e[1] ? e[0] : null))
+                .map((e) => (e[1].visible ? e[0] : null))
                 .filter((e) => e !== null) as string[],
             }}
             pageSizePreference={{
@@ -173,6 +157,7 @@ export const OSTable = () => {
               options: [
                 { value: 10, label: "10 resources" },
                 { value: 20, label: "20 resources" },
+                { value: 30, label: "30 resources" },
               ],
             }}
             visibleContentPreference={{
@@ -193,13 +178,7 @@ export const OSTable = () => {
           />
         }
       />
-      <Box padding="m">
-        {selectedItems.length
-          ? `${selectedItems.length} selected from ${totalRecords} records from the server`
-          : totalRecords
-          ? `${totalRecords} records from the server`
-          : ""}
-      </Box>
+      <Box padding="m">{totalRecords} records from the server.</Box>
     </div>
   );
 };

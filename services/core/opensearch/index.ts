@@ -20,18 +20,20 @@ type SearchResults = {
   more: boolean;
 };
 
+type SearchField = { key: string; value: string };
+
 export const getTransactions = async (
   customer_id: string,
-  txn_id: string
+  SearchFields: SearchField[]
 ): Promise<SearchResults> => {
-  return await simpleSearch(customer_id, txn_id);
+  return await simpleSearch(customer_id, SearchFields);
 };
 
 // READ (Could also use term rather than match)
-async function simpleSearch(customer_id: string, txn_id: string) {
+async function simpleSearch(customer_id: string, searchFields: SearchField[]) {
   const results = await client.search({
     index: process.env.OS_INDEX_NAME!,
-    size: 100,
+    size: 10000,
     body: {
       query: {
         bool: {
@@ -42,7 +44,9 @@ async function simpleSearch(customer_id: string, txn_id: string) {
               },
             },
           ],
-          filter: [{ wildcard: { txn_id: `*${txn_id}*` } }],
+          filter: searchFields.map((field) => ({
+            wildcard: { [field.key]: `*${field.value}*` },
+          })),
         },
       },
     },
