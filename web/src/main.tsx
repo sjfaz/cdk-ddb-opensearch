@@ -50,16 +50,22 @@ function Main(props: MainProps) {
   );
 }
 
-let container: HTMLElement;
+// let container: HTMLElement;
+// document.addEventListener("DOMContentLoaded", async () => {
+//   const apiUrl = await getUrl();
+//   if (!container) {
+//     container = document.getElementById("root") as HTMLElement;
+//     createRoot(container).render(
+//       <React.StrictMode>
+//         <Main url={apiUrl} />
+//       </React.StrictMode>
+//     );
+//   }
+// });
 
-document.addEventListener("DOMContentLoaded", async () => {
-  const apiUrl = await getUrl();
-  if (!container) {
-    container = document.getElementById("root") as HTMLElement;
-    createRoot(container).render(
-      <React.StrictMode>
-        <Main url={apiUrl} />
-      </React.StrictMode>
-    );
-  }
-});
+const container = document.getElementById("root") as HTMLElement;
+createRoot(container).render(
+  <React.StrictMode>
+    <Main url={await getUrl()} />
+  </React.StrictMode>
+);

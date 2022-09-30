@@ -1,72 +1,89 @@
 import React from "react";
 import { trpc } from "../../utils/trpc";
 import {
-  // Button,
   Header,
   Table,
   Box,
   Pagination,
   CollectionPreferences,
-  TextFilter,
+  PropertyFilter,
   Spinner,
 } from "@cloudscape-design/components";
+import { PropertyFilterProps } from "@cloudscape-design/components/property-filter";
+import { TableProps } from "@cloudscape-design/components";
 import { Transaction } from "../../../services/core/data";
 
-const CUSTOMER_ID = "0123"; // TODO: Enable user to set
-const DEFAULT_PAGESIZE = 10;
-type colState = { visible: boolean; limitLength?: number };
-const DEFAULT_COLUMNS: { [key: string]: colState } = {
-  customer_id: { visible: false },
-  txn_id: { visible: true },
-  card_number: { visible: true },
-  full_card_number: { visible: true },
-  product_code: { visible: true },
-  product_name: { visible: true },
-  product_quantity: { visible: true },
-  txn_datetime: { visible: true },
-  site_name: { visible: true },
-  original_gross_value: { visible: true },
-  description: { visible: true, limitLength: 50 },
+import {
+  DEFAULT_PAGESIZE,
+  DEFAULT_COLUMNS,
+  FILTER_CONSTANTS,
+  CUSTOMER_ID,
+  getDefaultFilterProps,
+} from "./table-config";
+import { NonCancelableEventHandler } from "@cloudscape-design/components/internal/events";
+
+const DEFAULT_FILTERING_QUERY: PropertyFilterProps.Query = {
+  tokens: [],
+  operation: "and",
 };
 
 export const OSTable = () => {
   const [appOptions, setAppOptions] = React.useState({
-    filteredText: "",
+    filteringQuery: DEFAULT_FILTERING_QUERY,
     page: 1,
     pageSize: DEFAULT_PAGESIZE,
     columns: { ...DEFAULT_COLUMNS },
   });
-  const { filteredText, page, pageSize, columns } = appOptions;
+  const { page, pageSize, columns, filteringQuery } = appOptions;
   const params = {
     customer_id: CUSTOMER_ID,
-    search_fields: [
-      { key: "txn_id", value: filteredText },
-      { key: "customer_id", value: "0123" },
-    ],
+    search_fields: filteringQuery.tokens.map((token) => ({
+      key: token.propertyKey!,
+      value: token.value,
+    })),
+    operator: filteringQuery.operation === "and" ? "must" : "should",
   };
   const getOrders = trpc.useQuery(["getTransactions", params]);
   console.log(getOrders);
-  const filteredData =
-    getOrders.data?.hits.filter((item) =>
-      item.txn_id.toLowerCase().includes(filteredText.toLowerCase())
-    ) ?? [];
+
+  const filteredData = getOrders.data?.hits ?? [];
   const totalRecords = getOrders.data?.totalHits ?? 0;
+
+  const cols: TableProps.ColumnDefinition<Transaction>[] = Object.keys(
+    DEFAULT_COLUMNS
+  ).map((key) => ({
+    id: key,
+    header: key,
+    cell: (transactionRecord) => {
+      const { limitLength } = DEFAULT_COLUMNS[key];
+      if (limitLength) {
+        const val = transactionRecord[key as keyof Transaction] as string;
+        return `${val.substring(0, limitLength)}...`;
+      }
+      return transactionRecord[key as keyof Transaction];
+    },
+    sortingField: key,
+  }));
+
+  const handlePropertyFilteringChange: NonCancelableEventHandler<
+    PropertyFilterProps.Query
+  > = (args) => {
+    console.log("args: ", args);
+    if (args.detail.tokens.some((token) => token.propertyKey === undefined)) {
+      alert("Please select a property");
+      return;
+    }
+    setAppOptions((prev) => ({
+      ...prev,
+      filteringQuery: args.detail,
+      page: 1,
+    }));
+  };
 
   return (
     <div>
       <Table
-        columnDefinitions={Object.keys(DEFAULT_COLUMNS).map((key) => ({
-          id: key,
-          header: key,
-          cell: (e: any) => {
-            const { limitLength } = DEFAULT_COLUMNS[key];
-            if (limitLength) {
-              return `${e[key].substring(0, limitLength)}...`;
-            }
-            return e[key];
-          },
-          sortingField: key,
-        }))}
+        columnDefinitions={cols}
         items={filteredData.slice((page - 1) * pageSize, page * pageSize)}
         loadingText="Loading resources"
         trackBy="txn_id"
@@ -91,16 +108,12 @@ export const OSTable = () => {
           </Box>
         }
         filter={
-          <TextFilter
-            filteringPlaceholder="Filter by transaction ID"
-            filteringText={filteredText}
-            onChange={(e) => {
-              setAppOptions((pv) => ({
-                ...pv,
-                page: 1,
-                filteredText: e.detail.filteringText,
-              }));
-            }}
+          <PropertyFilter
+            query={filteringQuery}
+            i18nStrings={FILTER_CONSTANTS}
+            filteringProperties={getDefaultFilterProps(columns)}
+            onChange={handlePropertyFilteringChange}
+            expandToViewport={true}
           />
         }
         header={
@@ -182,19 +195,3 @@ export const OSTable = () => {
     </div>
   );
 };
-
-// const deleteClicked = async () => {
-//   if (selectedItems.length !== 1) {
-//     alert("Please select just one item to delete");
-//     return;
-//   }
-//   await deleteTransaction.mutateAsync({
-//     pk: selectedItems[0].pk,
-//     sk: selectedItems[0].sk,
-//   });
-//   setSelectedItems([]);
-//   // We need to wait until change is replicated across to OS from DDB.
-//   setTimeout(() => {
-//     getOrders.refetch();
-//   }, 2000);
-// };

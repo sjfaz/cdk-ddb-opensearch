@@ -24,13 +24,18 @@ type SearchField = { key: string; value: string };
 
 export const getTransactions = async (
   customer_id: string,
-  SearchFields: SearchField[]
+  SearchFields: SearchField[],
+  operator: string
 ): Promise<SearchResults> => {
-  return await simpleSearch(customer_id, SearchFields);
+  return await simpleSearch(customer_id, SearchFields, operator);
 };
 
 // READ (Could also use term rather than match)
-async function simpleSearch(customer_id: string, searchFields: SearchField[]) {
+async function simpleSearch(
+  customer_id: string,
+  searchFields: SearchField[],
+  operator: string
+) {
   const results = await client.search({
     index: process.env.OS_INDEX_NAME!,
     size: 10000,
@@ -43,10 +48,14 @@ async function simpleSearch(customer_id: string, searchFields: SearchField[]) {
                 customer_id,
               },
             },
+            {
+              bool: {
+                [operator]: searchFields.map((field) => ({
+                  wildcard: { [field.key]: `*${field.value}*` },
+                })),
+              },
+            },
           ],
-          filter: searchFields.map((field) => ({
-            wildcard: { [field.key]: `*${field.value}*` },
-          })),
         },
       },
     },

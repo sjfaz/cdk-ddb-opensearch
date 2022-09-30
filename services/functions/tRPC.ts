@@ -17,9 +17,14 @@ const appRouter = trpc
     input: z.object({
       customer_id: z.string(),
       search_fields: z.array(z.object({ key: z.string(), value: z.string() })),
+      operator: z.string(),
     }),
     async resolve(req) {
-      return getTransactions(req.input.customer_id, req.input.search_fields);
+      return getTransactions(
+        req.input.customer_id,
+        req.input.search_fields,
+        req.input.operator
+      );
     },
   })
   .mutation("createTransaction", {
