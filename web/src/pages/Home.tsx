@@ -1,11 +1,6 @@
 import React from "react";
-import {
-  AppLayout,
-  ContentLayout,
-  Header,
-  Box,
-} from "@cloudscape-design/components";
-import { Navigation, OSTable } from "../components";
+import { AppLayout, Header, Box } from "@cloudscape-design/components";
+import { Navigation, OSTable, HeaderMessage } from "../components";
 
 export function MainHeader() {
   return (
@@ -41,14 +36,11 @@ export default function Home() {
   return (
     <AppLayout
       navigation={<Navigation activeHref="/" />}
+      content={<OSTable />}
+      contentType="table"
       tools={sidePanel}
-      footerSelector="#footer"
-      content={
-        <ContentLayout header={<MainHeader />}>
-          <OSTable />
-          {/* <Box id="footer">My footer</Box> */}
-        </ContentLayout>
-      }
+      stickyNotifications={true}
+      notifications={<HeaderMessage />}
     />
   );
 }

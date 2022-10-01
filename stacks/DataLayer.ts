@@ -93,18 +93,6 @@ export class DataLayer extends Construct {
       retryAttempts: 0,
     });
 
-    const ddbLambda = new NodejsFunction(this, "DynamoDBCrud", {
-      ...lambdaFnProps,
-      entry: "./services/functions/crud/ddb-crud.ts",
-      handler: "handler",
-      functionName: "invoke-dynamodb",
-      environment: {
-        DDB_TABLE_NAME: table.tableName,
-      },
-    });
-
-    table.grantFullAccess(ddbLambda);
-
     const ddbIngestion = new NodejsFunction(this, "DynamoDBIngestion", {
       ...lambdaFnProps,
       entry: "./services/functions/ingest-data.ts",
@@ -124,20 +112,6 @@ export class DataLayer extends Construct {
     table.grantFullAccess(ddbIngestion);
     openSearchDomain.grantWrite(ddbIngestion);
     openSearchDomain.grantIndexReadWrite(OS_INDEX_NAME, ddbIngestion);
-
-    const ddbOpenSearch = new NodejsFunction(this, "OpenSearchCrud", {
-      ...lambdaFnProps,
-      entry: "./services/functions/crud/os-crud.ts",
-      handler: "handler",
-      functionName: `${name}-invoke-opensearch`,
-      environment: {
-        OS_INDEX_NAME,
-        OS_AWS_REGION: process.env.CDK_DEFAULT_REGION!,
-        OS_DOMAIN: `https://${openSearchDomain.domainEndpoint}`,
-      },
-    });
-
-    openSearchDomain.grantReadWrite(ddbOpenSearch);
 
     // Add DynamoDB event source
     streamProcessor.addEventSource(

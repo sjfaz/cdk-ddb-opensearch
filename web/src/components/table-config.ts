@@ -7,13 +7,13 @@ type colStates = { [key: string]: colState };
 
 export const DEFAULT_COLUMNS: colStates = {
   customer_id: { visible: false, label: "Customer ID" },
+  txn_datetime: { visible: true, label: "Transaction Date" },
   txn_id: { visible: true, label: "Transaction ID" },
   card_number: { visible: true, label: "Card Number" },
   full_card_number: { visible: true, label: "Full Card Number" },
   product_code: { visible: true, label: "Product Code" },
   product_name: { visible: true, label: "Product Name" },
   product_quantity: { visible: true, label: "Product Quantity" },
-  txn_datetime: { visible: true, label: "Transaction Date" },
   site_name: { visible: true, label: "Site Name" },
   original_gross_value: { visible: true, label: "Original Gross Value" },
   description: { visible: true, limitLength: 50, label: "Description" },
@@ -24,6 +24,7 @@ const excludedColumns = [
   "customer_id",
   "original_gross_value",
   "product_quantity",
+  "txn_datetime",
 ];
 export const getDefaultFilterProps = (columns: colStates) => {
   const filterProps: PropertyFilterProps.FilteringProperty[] = [];
@@ -39,6 +40,15 @@ export const getDefaultFilterProps = (columns: colStates) => {
     }
   }
   return filterProps;
+};
+
+export const getType = (column: string) => {
+  const numberFields = [
+    "original_gross_value",
+    "product_quantity",
+    "txn_datetime",
+  ];
+  return numberFields.includes(column);
 };
 
 export const FILTER_CONSTANTS = {

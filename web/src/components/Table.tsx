@@ -12,15 +12,16 @@ import {
 import { PropertyFilterProps } from "@cloudscape-design/components/property-filter";
 import { TableProps } from "@cloudscape-design/components";
 import { Transaction } from "../../../services/core/data";
-
+import { NonCancelableEventHandler } from "@cloudscape-design/components/internal/events";
+import { FooterMessage } from "../components";
 import {
   DEFAULT_PAGESIZE,
   DEFAULT_COLUMNS,
   FILTER_CONSTANTS,
   CUSTOMER_ID,
   getDefaultFilterProps,
-} from "./table-config";
-import { NonCancelableEventHandler } from "@cloudscape-design/components/internal/events";
+  getType,
+} from "./";
 
 const DEFAULT_FILTERING_QUERY: PropertyFilterProps.Query = {
   tokens: [],
@@ -33,8 +34,17 @@ export const OSTable = () => {
     page: 1,
     pageSize: DEFAULT_PAGESIZE,
     columns: { ...DEFAULT_COLUMNS },
+    sortingColumn: { sortingField: "txn_datetime" },
+    sortingDescending: true,
   });
-  const { page, pageSize, columns, filteringQuery } = appOptions;
+  const {
+    page,
+    pageSize,
+    columns,
+    filteringQuery,
+    sortingColumn,
+    sortingDescending,
+  } = appOptions;
   const params = {
     customer_id: CUSTOMER_ID,
     search_fields: filteringQuery.tokens.map((token) => ({
@@ -42,9 +52,13 @@ export const OSTable = () => {
       value: token.value,
     })),
     operator: filteringQuery.operation === "and" ? "must" : "should",
+    sorting: {
+      column: sortingColumn.sortingField,
+      descending: sortingDescending ? "desc" : "asc",
+      isNumber: getType(sortingColumn.sortingField),
+    },
   };
   const getOrders = trpc.useQuery(["getTransactions", params]);
-  console.log(getOrders);
 
   const filteredData = getOrders.data?.hits ?? [];
   const totalRecords = getOrders.data?.totalHits ?? 0;
@@ -53,7 +67,7 @@ export const OSTable = () => {
     DEFAULT_COLUMNS
   ).map((key) => ({
     id: key,
-    header: key,
+    header: DEFAULT_COLUMNS[key].label,
     cell: (transactionRecord) => {
       const { limitLength } = DEFAULT_COLUMNS[key];
       if (limitLength) {
@@ -65,10 +79,18 @@ export const OSTable = () => {
     sortingField: key,
   }));
 
+  const handleSortingChange = (args: any) => {
+    setAppOptions((prev) => ({
+      ...prev,
+      page: 1,
+      sortingColumn: args.detail.sortingColumn,
+      sortingDescending: args.detail.isDescending,
+    }));
+  };
+
   const handlePropertyFilteringChange: NonCancelableEventHandler<
     PropertyFilterProps.Query
   > = (args) => {
-    console.log("args: ", args);
     if (args.detail.tokens.some((token) => token.propertyKey === undefined)) {
       alert("Please select a property");
       return;
@@ -87,10 +109,16 @@ export const OSTable = () => {
         items={filteredData.slice((page - 1) * pageSize, page * pageSize)}
         loadingText="Loading resources"
         trackBy="txn_id"
+        sortingColumn={sortingColumn}
+        sortingDescending={sortingDescending}
+        onSortingChange={handleSortingChange}
+        variant="full-page"
+        stickyHeader={true}
+        resizableColumns={true}
         visibleColumns={
           Object.entries(columns)
-            .map((e) => (e[1].visible ? e[0] : null))
-            .filter((e) => e !== null) as string[]
+            .map((column) => (column[1].visible ? column[0] : null))
+            .filter((column) => column !== null) as string[]
         }
         empty={
           <Box textAlign="center" color="inherit">
@@ -117,11 +145,7 @@ export const OSTable = () => {
           />
         }
         header={
-          <Header
-            counter={filteredData.length > 0 ? `(${filteredData[0].pk})` : ""}
-          >
-            Transactions Table
-          </Header>
+          <Header counter={`(CUST#${CUSTOMER_ID})`}>Transactions Table</Header>
         }
         pagination={
           <Pagination
@@ -146,6 +170,7 @@ export const OSTable = () => {
               console.log(e);
               setAppOptions((pv) => ({
                 ...pv,
+                page: 1,
                 pageSize: e.detail.pageSize ?? DEFAULT_PAGESIZE,
                 columns: Object.keys(DEFAULT_COLUMNS).reduce((acc, curr) => {
                   acc[curr] = {
@@ -168,9 +193,9 @@ export const OSTable = () => {
             pageSizePreference={{
               title: "Select page size",
               options: [
-                { value: 10, label: "10 resources" },
-                { value: 20, label: "20 resources" },
-                { value: 30, label: "30 resources" },
+                { value: 10, label: "10 records" },
+                { value: 20, label: "20 records" },
+                { value: 30, label: "30 records" },
               ],
             }}
             visibleContentPreference={{
@@ -178,11 +203,11 @@ export const OSTable = () => {
               options: [
                 {
                   label: "Columns",
-                  options: Object.keys(DEFAULT_COLUMNS).map((c, i) => {
+                  options: Object.keys(DEFAULT_COLUMNS).map((column_key) => {
                     return {
-                      id: c,
-                      label: c,
-                      editable: c !== "txn_id",
+                      id: column_key,
+                      label: column_key,
+                      editable: column_key !== "txn_id",
                     };
                   }),
                 },
@@ -191,7 +216,7 @@ export const OSTable = () => {
           />
         }
       />
-      <Box padding="m">{totalRecords} records from the server.</Box>
+      <FooterMessage message={`${totalRecords} records from the server.`} />
     </div>
   );
 };

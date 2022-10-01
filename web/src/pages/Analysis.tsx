@@ -16,16 +16,6 @@ export function MainHeader() {
   );
 }
 
-// const sidePanel = (
-//   <Box padding="l">
-//     <Header variant="h2">Info</Header>
-
-//     <Box padding="xxs">
-//       Further discussion points for considering OpenSearch with DynamoDB.
-//     </Box>
-//   </Box>
-// );
-
 export default function Analysis() {
   return (
     <AppLayout

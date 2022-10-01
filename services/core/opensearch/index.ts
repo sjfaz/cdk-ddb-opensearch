@@ -21,22 +21,25 @@ type SearchResults = {
 };
 
 type SearchField = { key: string; value: string };
+type SortFields = { column: string; descending: string; isNumber: boolean };
 
 export const getTransactions = async (
   customer_id: string,
   SearchFields: SearchField[],
-  operator: string
+  operator: string,
+  sorting: SortFields | undefined
 ): Promise<SearchResults> => {
-  return await simpleSearch(customer_id, SearchFields, operator);
+  return await simpleSearch(customer_id, SearchFields, operator, sorting);
 };
 
 // READ (Could also use term rather than match)
 async function simpleSearch(
   customer_id: string,
   searchFields: SearchField[],
-  operator: string
+  operator: string,
+  sorting?: SortFields | undefined
 ) {
-  const results = await client.search({
+  const query = {
     index: process.env.OS_INDEX_NAME!,
     size: 10000,
     body: {
@@ -59,6 +62,15 @@ async function simpleSearch(
         },
       },
     },
+  };
+
+  const column_name = `${sorting?.column}${
+    sorting?.isNumber ? "" : ".keyword"
+  }`;
+  const sort = sorting ? [{ [column_name]: sorting.descending }] : [];
+  const results = await client.search({
+    ...query,
+    body: { ...query.body, sort },
   });
   const hits = results.body.hits.hits.map((hit: any) => {
     const txn: Transaction = hit._source;

@@ -18,24 +18,21 @@ const appRouter = trpc
       customer_id: z.string(),
       search_fields: z.array(z.object({ key: z.string(), value: z.string() })),
       operator: z.string(),
+      sorting: z.optional(
+        z.object({
+          column: z.string(),
+          descending: z.string(),
+          isNumber: z.boolean(),
+        })
+      ),
     }),
     async resolve(req) {
       return getTransactions(
         req.input.customer_id,
         req.input.search_fields,
-        req.input.operator
+        req.input.operator,
+        req.input.sorting
       );
-    },
-  })
-  .mutation("createTransaction", {
-    input: z.object({
-      name: z.string(),
-      email: z.string(),
-      orderType: z.string(),
-    }),
-    async resolve(req) {
-      // Write to DB
-      return {};
     },
   })
   .mutation("deleteTransaction", {
