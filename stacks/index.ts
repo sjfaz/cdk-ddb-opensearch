@@ -2,6 +2,7 @@ import { Stack, StackProps, CfnParameter } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import { DataLayer } from "./DataLayer";
 import { APILayerConstruct } from "./APILayer";
+import { WebLayerConstruct } from "./WebLayer";
 import { ITable } from "aws-cdk-lib/aws-dynamodb";
 import { aws_opensearchservice } from "aws-cdk-lib";
 
@@ -36,5 +37,18 @@ export class APILayerStack extends Stack {
       domain: props.domain,
     });
     this.apiUrl = api.apiUrl;
+  }
+}
+
+interface WebLayerProps extends StackProps {
+  apiUrl: string;
+}
+
+export class WebLayerStack extends Stack {
+  constructor(scope: Construct, id: string, props: WebLayerProps) {
+    super(scope, id, props);
+    const api = new WebLayerConstruct(this, "WebLayerConstruct", {
+      apiUrl: props.apiUrl,
+    });
   }
 }

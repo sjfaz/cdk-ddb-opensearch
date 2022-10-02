@@ -17,9 +17,16 @@ export const getTransactions = async (
   customer_id: string,
   SearchFields: SearchField[],
   operator: string,
+  paging: { pageSize: number; from: number },
   sorting: SortFields | undefined
 ): Promise<SearchResults> => {
-  return await simpleSearch(customer_id, SearchFields, operator, sorting);
+  return await simpleSearch(
+    customer_id,
+    SearchFields,
+    operator,
+    paging,
+    sorting
+  );
 };
 
 // READ (Could also use term rather than match)
@@ -27,12 +34,14 @@ async function simpleSearch(
   customer_id: string,
   searchFields: SearchField[],
   operator: string,
+  paging: { pageSize: number; from: number },
   sorting?: SortFields | undefined
 ) {
   const query = {
     index: process.env.OS_INDEX_NAME!,
     routing: customer_id,
-    size: 10000,
+    from: paging.from,
+    size: paging.pageSize,
     body: {
       query: {
         bool: {

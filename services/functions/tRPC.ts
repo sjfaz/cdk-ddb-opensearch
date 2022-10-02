@@ -25,12 +25,17 @@ const appRouter = trpc
           isNumber: z.boolean(),
         })
       ),
+      paging: z.object({
+        pageSize: z.number(),
+        from: z.number(),
+      }),
     }),
     async resolve(req) {
       return getTransactions(
         req.input.customer_id,
         req.input.search_fields,
         req.input.operator,
+        req.input.paging,
         req.input.sorting
       );
     },

@@ -35,8 +35,8 @@ const sidePanel = (
       and took and also how many shards were scanned.
     </Box>
     <Box padding="xxs">
-      Filtering and sorting happens server side. Paging is done client side.
-      Results automatically update when your browser tab gets focus.
+      Filtering, sorting, paging happens server side. This is part of the
+      equation to keep the latency low.
     </Box>
   </Box>
 );

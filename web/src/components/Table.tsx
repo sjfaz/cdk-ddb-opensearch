@@ -60,9 +60,13 @@ export const OSTable = () => {
       descending: sortingDescending ? "desc" : "asc",
       isNumber: getType(sortingColumn.sortingField),
     },
+    paging: {
+      pageSize,
+      from: (page - 1) * pageSize,
+    },
   };
+  console.log("paging: ", params);
   const getTransactions = trpc.useQuery(["getTransactions", params]);
-
   const filteredData = getTransactions.data?.hits ?? [];
   const totalRecords = getTransactions.data?.totalHits ?? 0;
   const performanceData = getTransactions.data
@@ -112,7 +116,8 @@ export const OSTable = () => {
     <div>
       <Table
         columnDefinitions={cols}
-        items={filteredData.slice((page - 1) * pageSize, page * pageSize)}
+        // items={filteredData.slice((page - 1) * pageSize, page * pageSize)}
+        items={filteredData}
         loadingText="Loading resources"
         trackBy="txn_id"
         sortingColumn={sortingColumn}
@@ -156,7 +161,8 @@ export const OSTable = () => {
         pagination={
           <Pagination
             currentPageIndex={page}
-            pagesCount={Math.ceil(filteredData.length / pageSize)}
+            // pagesCount={Math.ceil(filteredData.length / pageSize)}
+            pagesCount={Math.ceil(totalRecords / pageSize)}
             ariaLabels={{
               nextPageLabel: "Next page",
               previousPageLabel: "Previous page",
