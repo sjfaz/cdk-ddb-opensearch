@@ -41,6 +41,7 @@ async function simpleSearch(
 ) {
   const query = {
     index: process.env.OS_INDEX_NAME!,
+    routing: customer_id,
     size: 10000,
     body: {
       query: {

@@ -9,6 +9,7 @@ import {
   Duration,
   CfnOutput,
   aws_opensearchservice,
+  aws_lambda,
 } from "aws-cdk-lib";
 import { HttpLambdaIntegration } from "@aws-cdk/aws-apigatewayv2-integrations-alpha";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
@@ -70,6 +71,7 @@ export class APILayerConstruct extends Construct {
         entry: "./services/functions/tRPC.ts", // accepts .js, .jsx, .ts and .tsx files
         functionName: `${name}-tRPC`,
         handler: "handler",
+        tracing: aws_lambda.Tracing.ACTIVE,
         environment: {
           TABLE_NAME: props.table.tableName,
           OS_INDEX_NAME,

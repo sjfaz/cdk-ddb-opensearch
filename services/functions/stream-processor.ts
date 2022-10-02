@@ -34,9 +34,11 @@ export const handler = async (event: DynamoDBStreamEvent): Promise<void> => {
           record.dynamodb.NewImage
         ) as Transaction;
         console.log("Indexing document in OpenSearch with id:", documentId);
+        // The routing field is used to shard by customerId
         await client.index({
           index,
           id: documentId,
+          routing: document.customer_id,
           body: document,
         });
       }

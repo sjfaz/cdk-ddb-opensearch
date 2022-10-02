@@ -9,28 +9,26 @@ import {
 import { batchWrite, createIndex } from "./utils";
 import { EventBridgeEvent } from "aws-lambda";
 let firstRun = true;
+const SHARDS = parseInt(process.env.OS_SHARDS!);
 
 export const handler = async (
   event: EventBridgeEvent<"Scheduled Event", any>
 ): Promise<void> => {
-  console.log("eb event: ", event);
-
   if (firstRun) {
     try {
       console.log(
         "create OpenSearch ahead of time so we can set shards: ",
         event
       );
-      await createIndex(34, 1);
+      await createIndex(SHARDS, 1);
       firstRun = false;
     } catch (err) {
       console.log(`error creating index: ${err}`);
     }
   }
 
-  // scale 500k transactions per day
+  // scale 500k dummy transactions per day
   // 347 per minute = 1050 per 3 minutes
-  console.log("Insert dummy data with falso");
   let counter = 0;
   const txnArray: Transaction[] = [];
   while (counter < 1050) {

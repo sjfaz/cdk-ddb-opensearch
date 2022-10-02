@@ -3,7 +3,6 @@ import {
   Stack,
   Duration,
   aws_opensearchservice,
-  aws_ec2,
   aws_iam,
   RemovalPolicy,
 } from "aws-cdk-lib";
@@ -11,18 +10,28 @@ import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as events from "aws-cdk-lib/aws-events";
 import { LambdaFunction } from "aws-cdk-lib/aws-events-targets";
 import { Construct } from "constructs";
-import { lambdaFnProps } from "./utils";
+import {
+  lambdaFnProps,
+  OS_TEST_CONFIG,
+  OS_PROD_CONFIG,
+  OS_TEST_SHARDS,
+  OS_PROD_SHARDS,
+} from "./utils";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { DynamoEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
-const { EngineVersion, Domain } = aws_opensearchservice;
+const { Domain } = aws_opensearchservice;
 const OS_INDEX_NAME = "transaction-index";
 
 export class DataLayer extends Construct {
   public readonly table: dynamodb.ITable;
   public readonly osDomain: aws_opensearchservice.IDomain;
 
-  constructor(parent: Stack, name: string, props: { ipAddress: string }) {
+  constructor(
+    parent: Stack,
+    name: string,
+    props: { ipAddress: string; envConfig?: string }
+  ) {
     super(parent, name);
 
     const table = new dynamodb.Table(this, "TransactionTable", {
@@ -33,34 +42,10 @@ export class DataLayer extends Construct {
       stream: dynamodb.StreamViewType.NEW_IMAGE,
     });
 
-    // Optimal size is 30GB per shard in index
-    // For 1TB we need 34 shards. Default is number of shards is 5.
-    // 1GB of JVM Heap RAM should for 20/25 shards
-    // So we need at least 4GB of RAM (only 50% of instance RAM goes to JVM)
-    // For redundancy we need 2 instances - the replica of the index will be stored on the second instance.
-    // TODO: We can use more indexes to split up the data. But we don't want an index-per-tenant that would be too many shards.
+    const OS_CONFIG =
+      props.envConfig === "prod" ? OS_PROD_CONFIG : OS_TEST_CONFIG;
     const openSearchDomain = new Domain(this, "OpenSearchDomain", {
-      version: EngineVersion.OPENSEARCH_1_3,
-      enableVersionUpgrade: true,
-      capacity: {
-        // dataNodeInstanceType: "t3.small.search",
-        dataNodeInstanceType: "m6g.xlarge.search", // 8GB (upto 1024 GB storage)
-        dataNodes: 1,
-        masterNodes: 0,
-      },
-      // zoneAwareness: {
-      //   availabilityZoneCount: 2,
-      // },
-      ebs: {
-        enabled: true,
-        volumeSize: 1024,
-        volumeType: aws_ec2.EbsDeviceVolumeType.GENERAL_PURPOSE_SSD,
-      },
-      logging: {
-        slowSearchLogEnabled: true,
-        appLogEnabled: true,
-        slowIndexLogEnabled: true,
-      },
+      ...OS_CONFIG,
     });
 
     // If you want to see dashboard, you need to add this policy
@@ -84,7 +69,7 @@ export class DataLayer extends Construct {
       ...lambdaFnProps,
       entry: "./services/functions/stream-processor.ts",
       handler: "handler",
-      timeout: Duration.seconds(300),
+      timeout: Duration.seconds(180),
       environment: {
         OS_INDEX_NAME,
         OS_AWS_REGION: process.env.CDK_DEFAULT_REGION!,
@@ -98,13 +83,13 @@ export class DataLayer extends Construct {
       entry: "./services/functions/ingest-data.ts",
       handler: "handler",
       functionName: `${name}-ingest-dynamodb`,
-      memorySize: 1024,
       timeout: Duration.seconds(300),
       environment: {
         DDB_TABLE_NAME: table.tableName,
         OS_INDEX_NAME,
         OS_AWS_REGION: process.env.CDK_DEFAULT_REGION!,
         OS_DOMAIN: `https://${openSearchDomain.domainEndpoint}`,
+        OS_SHARDS: props.envConfig === "prod" ? OS_PROD_SHARDS : OS_TEST_SHARDS,
       },
       retryAttempts: 0,
     });
