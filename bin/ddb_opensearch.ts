@@ -9,6 +9,6 @@ const api = new APILayerStack(app, "APILayerStack", {
   table: db.table,
   domain: db.domain,
 });
-// new WebLayerStack(app, "WebLayerStack", {
-//   apiUrl: api.apiUrl,
-// });
+new WebLayerStack(app, "WebLayerStack", {
+  apiUrl: api.apiUrl,
+});

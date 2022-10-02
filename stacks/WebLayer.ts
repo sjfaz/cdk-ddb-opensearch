@@ -43,8 +43,6 @@ export class WebLayerConstruct extends Construct {
       autoDeleteObjects: true,
     });
 
-    new CfnOutput(this, "Bucket", { value: siteBucket.bucketName });
-
     const distribution = new cloudfront.Distribution(this, "osweb-dist", {
       defaultRootObject: "index.html",
       defaultBehavior: {
@@ -69,7 +67,7 @@ export class WebLayerConstruct extends Construct {
         ],
       })
     );
-    new CfnOutput(this, "Bucket", { value: siteBucket.bucketName });
+    new CfnOutput(this, "OSWebBucket", { value: siteBucket.bucketName });
     new CfnOutput(this, "DistributionId", {
       value: distribution.distributionId,
     });

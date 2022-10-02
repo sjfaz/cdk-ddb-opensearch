@@ -16,7 +16,7 @@ export const Navigation = (props: NavigationProps) => {
       text: "OpenSearch Demo",
       href: "/",
     },
-    { type: "link", text: "Analysis", href: "/analysis" },
+    // { type: "link", text: "Analysis", href: "/analysis" },
   ];
   return (
     <>

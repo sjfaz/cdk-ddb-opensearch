@@ -65,7 +65,7 @@ export const OSTable = () => {
       from: (page - 1) * pageSize,
     },
   };
-  console.log("paging: ", params);
+
   const getTransactions = trpc.useQuery(["getTransactions", params]);
   const filteredData = getTransactions.data?.hits ?? [];
   const totalRecords = getTransactions.data?.totalHits ?? 0;
