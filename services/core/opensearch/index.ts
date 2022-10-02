@@ -1,23 +1,13 @@
-// TODO: implement crud from OpenSearch
 import { Transaction } from "../data";
 import { getClient } from "../clients/os-client";
 const client = getClient();
-
-// const t: Transaction = {
-//   pk: "CUST#0156",
-//   sk: "TXN#1234567890",
-//   customer_id: "0123",
-//   txn_id: "1234567890",
-//   card_number: "1234-5678-9012-3456",
-//   product_code: "1234567890",
-//   txn_datetime: "2020-01-01T00:00:00.000Z",
-//   description: "Product 1234567890",
-// };
 
 type SearchResults = {
   totalHits: number;
   hits: Transaction[];
   more: boolean;
+  shards: number;
+  took: number;
 };
 
 type SearchField = { key: string; value: string };
@@ -82,6 +72,8 @@ async function simpleSearch(
     totalHits,
     hits,
     more: totalHits > hits.length,
+    shards: results.body._shards.total,
+    took: results.body.took,
   };
 }
 

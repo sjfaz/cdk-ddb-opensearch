@@ -8,6 +8,7 @@ import {
   CollectionPreferences,
   PropertyFilter,
   Spinner,
+  Input,
 } from "@cloudscape-design/components";
 import { PropertyFilterProps } from "@cloudscape-design/components/property-filter";
 import { TableProps } from "@cloudscape-design/components";
@@ -36,6 +37,7 @@ export const OSTable = () => {
     columns: { ...DEFAULT_COLUMNS },
     sortingColumn: { sortingField: "txn_datetime" },
     sortingDescending: true,
+    customerId: CUSTOMER_ID,
   });
   const {
     page,
@@ -44,9 +46,10 @@ export const OSTable = () => {
     filteringQuery,
     sortingColumn,
     sortingDescending,
+    customerId,
   } = appOptions;
   const params = {
-    customer_id: CUSTOMER_ID,
+    customer_id: customerId,
     search_fields: filteringQuery.tokens.map((token) => ({
       key: token.propertyKey!,
       value: token.value,
@@ -58,10 +61,13 @@ export const OSTable = () => {
       isNumber: getType(sortingColumn.sortingField),
     },
   };
-  const getOrders = trpc.useQuery(["getTransactions", params]);
+  const getTransactions = trpc.useQuery(["getTransactions", params]);
 
-  const filteredData = getOrders.data?.hits ?? [];
-  const totalRecords = getOrders.data?.totalHits ?? 0;
+  const filteredData = getTransactions.data?.hits ?? [];
+  const totalRecords = getTransactions.data?.totalHits ?? 0;
+  const performanceData = getTransactions.data
+    ? `OpenSearch took: ${getTransactions.data?.took}ms, shards scanned: ${getTransactions.data?.shards}`
+    : "";
 
   const cols: TableProps.ColumnDefinition<Transaction>[] = Object.keys(
     DEFAULT_COLUMNS
@@ -124,7 +130,7 @@ export const OSTable = () => {
           <Box textAlign="center" color="inherit">
             <b>No resources</b>
             <Box padding={{ bottom: "s" }} variant="p" color="inherit">
-              {getOrders.isLoading ? (
+              {getTransactions.isLoading ? (
                 <>
                   <Spinner />
                   Loading...
@@ -145,7 +151,7 @@ export const OSTable = () => {
           />
         }
         header={
-          <Header counter={`(CUST#${CUSTOMER_ID})`}>Transactions Table</Header>
+          <Header counter={`(CUST#${customerId})`}>Transactions Table</Header>
         }
         pagination={
           <Pagination
@@ -171,6 +177,7 @@ export const OSTable = () => {
               setAppOptions((pv) => ({
                 ...pv,
                 page: 1,
+                customerId: e.detail.custom ?? customerId,
                 pageSize: e.detail.pageSize ?? DEFAULT_PAGESIZE,
                 columns: Object.keys(DEFAULT_COLUMNS).reduce((acc, curr) => {
                   acc[curr] = {
@@ -198,6 +205,21 @@ export const OSTable = () => {
                 { value: 30, label: "30 records" },
               ],
             }}
+            customPreference={(customValue, setCustomValue) => (
+              <>
+                <Box variant="div" margin={{ vertical: "xs" }}>
+                  <strong>Customer ID (Number between 0000 and 0999)</strong>
+                </Box>
+                <Input
+                  value={customValue ?? customerId}
+                  onChange={({ detail }: any) => {
+                    if (detail.value.length < 5 && !isNaN(detail.value)) {
+                      return setCustomValue(detail.value);
+                    }
+                  }}
+                />
+              </>
+            )}
             visibleContentPreference={{
               title: "Select visible content",
               options: [
@@ -216,7 +238,9 @@ export const OSTable = () => {
           />
         }
       />
-      <FooterMessage message={`${totalRecords} records from the server.`} />
+      <FooterMessage
+        message={`${totalRecords} records from the server. ${performanceData}`}
+      />
     </div>
   );
 };
