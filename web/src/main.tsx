@@ -1,15 +1,10 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { createRoot } from "react-dom/client";
 import Home from "./pages/home";
 import Analysis from "./pages/analysis";
 import { QueryClient, QueryClientProvider } from "react-query";
 import { trpc } from "../utils/trpc";
-import {
-  ReactLocation,
-  Router,
-  useMatch,
-  createHashHistory,
-} from "@tanstack/react-location";
+import { ReactLocation, Router } from "@tanstack/react-location";
 import "@cloudscape-design/global-styles/index.css";
 import "./style/index.css";
 
@@ -39,13 +34,6 @@ function Main(props: MainProps) {
 
   console.log("rendering...");
   const location = new ReactLocation();
-  // Create a hash history
-  //const hashHistory = createHashHistory();
-
-  // Set up a ReactLocation instance with the hash history
-  // const location = new ReactLocation({
-  //   history: hashHistory,
-  // });
 
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
@@ -54,7 +42,7 @@ function Main(props: MainProps) {
           location={location}
           routes={[
             { path: "/", element: <Home /> },
-            // { path: "#/analysis", element: <Analysis /> },
+            { path: "/analysis", element: <Analysis /> },
           ]}
         ></Router>
       </QueryClientProvider>
@@ -65,13 +53,10 @@ function Main(props: MainProps) {
 let container: HTMLElement;
 document.addEventListener("DOMContentLoaded", async () => {
   const apiUrl = await getUrl();
+  console.log("test");
   if (!container) {
     container = document.getElementById("root") as HTMLElement;
-    createRoot(container).render(
-      <React.StrictMode>
-        <Main url={apiUrl} />
-      </React.StrictMode>
-    );
+    createRoot(container).render(<Main url={apiUrl} />);
   }
 });
 

@@ -66,15 +66,15 @@ export const OSTable = () => {
     },
   };
 
-  const getTransactions = trpc.useQuery(["getTransactions", params]);
-  const filteredData = getTransactions.data?.hits ?? [];
-  const totalRecords = getTransactions.data?.totalHits ?? 0;
-  const performanceData =
-    !getTransactions.isLoading && getTransactions.data
-      ? `OpenSearch took: ${getTransactions.data?.took}ms, shards scanned: ${getTransactions.data?.shards}`
-      : "";
-
-  // console.log("p:", performanceData, params);
+  const { data, isLoading, isFetching } = trpc.useQuery([
+    "getTransactions",
+    params,
+  ]);
+  const filteredData = data?.hits ?? [];
+  const totalRecords = data?.totalHits ?? 0;
+  const performanceData = data
+    ? `OpenSearch took: ${data?.took}ms, shards scanned: ${data?.shards}`
+    : "";
 
   const cols: TableProps.ColumnDefinition<Transaction>[] = Object.keys(
     DEFAULT_COLUMNS
@@ -137,7 +137,7 @@ export const OSTable = () => {
           <Box textAlign="center" color="inherit">
             <b>No resources</b>
             <Box padding={{ bottom: "s" }} variant="p" color="inherit">
-              {getTransactions.isLoading ? (
+              {isLoading ? (
                 <>
                   <Spinner />
                   Loading...
@@ -246,9 +246,11 @@ export const OSTable = () => {
           />
         }
       />
-      <FooterMessage
-        message={`${totalRecords} records from the server. ${performanceData}`}
-      />
+      {!isLoading && !isFetching && (
+        <FooterMessage
+          message={`${totalRecords} records from the server. ${performanceData}`}
+        />
+      )}
     </div>
   );
 };

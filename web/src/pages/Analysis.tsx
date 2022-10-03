@@ -16,6 +16,7 @@ export function MainHeader() {
 }
 
 export default function Analysis() {
+  console.log("rendering analysis...");
   return (
     <AppLayout
       navigation={<Navigation activeHref="#/analysis" />}
