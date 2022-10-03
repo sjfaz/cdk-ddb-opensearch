@@ -69,9 +69,12 @@ export const OSTable = () => {
   const getTransactions = trpc.useQuery(["getTransactions", params]);
   const filteredData = getTransactions.data?.hits ?? [];
   const totalRecords = getTransactions.data?.totalHits ?? 0;
-  const performanceData = getTransactions.data
-    ? `OpenSearch took: ${getTransactions.data?.took}ms, shards scanned: ${getTransactions.data?.shards}`
-    : "";
+  const performanceData =
+    !getTransactions.isLoading && getTransactions.data
+      ? `OpenSearch took: ${getTransactions.data?.took}ms, shards scanned: ${getTransactions.data?.shards}`
+      : "";
+
+  // console.log("p:", performanceData, params);
 
   const cols: TableProps.ColumnDefinition<Transaction>[] = Object.keys(
     DEFAULT_COLUMNS
@@ -116,7 +119,6 @@ export const OSTable = () => {
     <div>
       <Table
         columnDefinitions={cols}
-        // items={filteredData.slice((page - 1) * pageSize, page * pageSize)}
         items={filteredData}
         loadingText="Loading resources"
         trackBy="txn_id"

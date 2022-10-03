@@ -31,7 +31,7 @@ export const handler = async (
   // 347 per minute = 1050 per 3 minutes
   let counter = 0;
   const txnArray: Transaction[] = [];
-  while (counter < 3150) {
+  while (counter < 1050) {
     counter++;
     const customer_id = `0${randAccount({ accountLength: 3 })}`;
     const txn_id = randAccount();

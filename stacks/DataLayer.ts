@@ -108,11 +108,11 @@ export class DataLayer extends Construct {
       })
     );
 
-    const every_2_mins = events.Schedule.rate(Duration.minutes(2));
+    const every_3_mins = events.Schedule.rate(Duration.minutes(3));
     // const every_3_hours = events.Schedule.rate(Duration.hours(3));
     // events.Schedule.cron({ minute: "0", hour: "0/3" }), // every 3 hours
     new events.Rule(this, "ScheduleRule", {
-      schedule: every_2_mins,
+      schedule: every_3_mins,
       targets: [new LambdaFunction(ddbIngestion)],
     });
 
