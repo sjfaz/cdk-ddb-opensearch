@@ -53,7 +53,6 @@ function Main(props: MainProps) {
 let container: HTMLElement;
 document.addEventListener("DOMContentLoaded", async () => {
   const apiUrl = await getUrl();
-  console.log("test");
   if (!container) {
     container = document.getElementById("root") as HTMLElement;
     createRoot(container).render(<Main url={apiUrl} />);

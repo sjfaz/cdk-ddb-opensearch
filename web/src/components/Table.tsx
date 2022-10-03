@@ -181,7 +181,6 @@ export const OSTable = () => {
         preferences={
           <CollectionPreferences
             onConfirm={(e) => {
-              console.log(e);
               setAppOptions((pv) => ({
                 ...pv,
                 page: 1,
