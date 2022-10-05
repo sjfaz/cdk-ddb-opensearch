@@ -13,7 +13,7 @@ This project sets up:
 yarn cdk deploy --parameters DataLayerStack:ipaddress='YOUR_IP_ADDRESS' --all
 
 # destroy
-npm cdk destroy
+npm cdk destroy --all
 ```
 
 ## CDK commands below:
