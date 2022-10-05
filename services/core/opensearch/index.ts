@@ -29,7 +29,16 @@ export const getTransactions = async (
   );
 };
 
-// READ (Could also use term rather than match)
+const MULTI_MATCH_FIELDS = [
+  "product_code",
+  "product_name",
+  "site_name",
+  "txn_id",
+  "card_number",
+  "full_card_number",
+  "description",
+];
+
 async function simpleSearch(
   customer_id: string,
   searchFields: SearchField[],
@@ -53,9 +62,18 @@ async function simpleSearch(
             },
             {
               bool: {
-                [operator]: searchFields.map((field) => ({
-                  wildcard: { [field.key]: `*${field.value}*` },
-                })),
+                [operator]: searchFields.map((field) => {
+                  if (field.key === "multi_match") {
+                    return {
+                      query_string: {
+                        query: `*${field.value}*`,
+                        fields: MULTI_MATCH_FIELDS,
+                      },
+                    };
+                  } else {
+                    return { wildcard: { [field.key]: `*${field.value}*` } };
+                  }
+                }),
               },
             },
           ],

@@ -39,6 +39,13 @@ export const getDefaultFilterProps = (columns: colStates) => {
       });
     }
   }
+  filterProps.push({
+    key: "multi_match",
+    propertyLabel: "Multi Match",
+    groupValuesLabel: "Multi Match",
+    operators: [":"],
+    defaultOperator: ":",
+  });
   return filterProps;
 };
 

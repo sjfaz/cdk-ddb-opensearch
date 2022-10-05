@@ -8,6 +8,14 @@ This project sets up:
 - Static React SPA website using the CloudScape component library.
 - EventBridge and Lambda to import dummy data into DynamoDB every x minutes.
 
+```
+# deploy (IP Address is to view OpenSearch Dashboards)
+yarn cdk deploy --parameters DataLayerStack:ipaddress='YOUR_IP_ADDRESS' --all
+
+# destroy
+npm cdk destroy
+```
+
 ## CDK commands below:
 
 - `npm run build` compile typescript to js

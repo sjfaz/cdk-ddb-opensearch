@@ -63,6 +63,7 @@ export class APILayerConstruct extends Construct {
       }
     );
 
+    // Provisioned concurrency only works with alias
     const newFuncRPC = new NodejsFunction(
       this,
       `${name}-trpc-endpoint-handler`,
