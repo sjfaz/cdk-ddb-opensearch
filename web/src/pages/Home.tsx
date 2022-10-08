@@ -24,15 +24,14 @@ const sidePanel = (
     <Box padding="xxs">
       The table can be sorted and you can search the text fields. The filter on
       OpenSearch the wildcard query. We target a specific shard using custom
-      routing. The customer routing works by using the customer_id as the
-      routing key. This means we can scan just one shard for each customer,
-      allowing it to scale nicely.
+      routing. The custom routing works by using the customer_id as the routing
+      key. This means we can scan just one shard for each customer, allowing it
+      to scale nicely.
     </Box>
     <Box padding="xxs">
       OpenSearch gives advantages over DynamoDB for use cases where we need to
-      full featured search functionality. For more information see on this see
-      the analysis page. The footer shows records returned, OpenSearch latency
-      and took and also how many shards were scanned.
+      full featured search functionality. The footer shows records returned,
+      OpenSearch latency and took and also how many shards were scanned.
     </Box>
     <Box padding="xxs">
       Filtering, sorting, paging happens server side. This is part of the
