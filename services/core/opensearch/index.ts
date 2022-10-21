@@ -49,6 +49,7 @@ async function simpleSearch(
   const query = {
     index: process.env.OS_INDEX_NAME!,
     routing: customer_id,
+    track_total_hits: true,
     from: paging.from,
     size: paging.pageSize,
     body: {
