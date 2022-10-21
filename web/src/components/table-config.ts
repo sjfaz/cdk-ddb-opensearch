@@ -2,6 +2,7 @@ import { PropertyFilterProps } from "@cloudscape-design/components/property-filt
 
 export const CUSTOMER_ID = "0123"; // TODO: Enable user to set
 export const DEFAULT_PAGESIZE = 10;
+export const MAX_DISPLAY_RECORDS = 10000;
 type colState = { visible: boolean; limitLength?: number; label: string };
 type colStates = { [key: string]: colState };
 

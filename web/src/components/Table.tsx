@@ -17,6 +17,7 @@ import { NonCancelableEventHandler } from "@cloudscape-design/components/interna
 import { FooterMessage } from "../components";
 import {
   DEFAULT_PAGESIZE,
+  MAX_DISPLAY_RECORDS,
   DEFAULT_COLUMNS,
   FILTER_CONSTANTS,
   CUSTOMER_ID,
@@ -72,6 +73,8 @@ export const OSTable = () => {
   ]);
   const filteredData = data?.hits ?? [];
   const totalRecords = data?.totalHits ?? 0;
+  const maxDisplayRecords = Math.min(MAX_DISPLAY_RECORDS, totalRecords);
+
   const performanceData = data
     ? `OpenSearch took: ${data?.took}ms, shards scanned: ${data?.shards}`
     : "";
@@ -164,7 +167,7 @@ export const OSTable = () => {
           <Pagination
             currentPageIndex={page}
             // pagesCount={Math.ceil(filteredData.length / pageSize)}
-            pagesCount={Math.ceil(totalRecords / pageSize)}
+            pagesCount={Math.ceil(maxDisplayRecords / pageSize)}
             ariaLabels={{
               nextPageLabel: "Next page",
               previousPageLabel: "Previous page",
@@ -247,7 +250,7 @@ export const OSTable = () => {
       />
       {!isLoading && !isFetching && (
         <FooterMessage
-          message={`${totalRecords} records from the server. ${performanceData}`}
+          message={`${totalRecords} results from the server (max 10k returned). ${performanceData}`}
         />
       )}
     </div>
