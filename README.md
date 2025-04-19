@@ -5,8 +5,8 @@ This project sets up:
 - OpenSearch Cluster
 - DynamoDB Table with stream to sync data to OpenSearch Cluster
 - Lambda, APIGateway, TRPC for the API
-- Static React SPA website using the CloudScape component library.
-- EventBridge and Lambda to import dummy data into DynamoDB every x minutes.
+- Static React SPA website using the CloudScape component library
+- EventBridge and Lambda to import dummy data into DynamoDB every x minutes
 
 ```
 # deploy (IP Address is to view OpenSearch Dashboards)
